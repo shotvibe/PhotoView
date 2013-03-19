@@ -404,7 +404,7 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 					
 				case MotionEvent.ACTION_MOVE:
 					
-					
+					if(!mScaleDragDetector.isScaling())
 					if((isLeftEdge && ev.getRawX()-downX > 0) || (isRightEdge && ev.getRawX()-downX < 0))
 						{
 						isLeftEdge = false;
