@@ -15,6 +15,7 @@
  *******************************************************************************/
 package uk.co.senab.photoview;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Matrix;
 import android.graphics.Matrix.ScaleToFit;
@@ -51,6 +52,11 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 	private float mMinScale = DEFAULT_MIN_SCALE;
 	private float mMidScale = DEFAULT_MID_SCALE;
 	private float mMaxScale = DEFAULT_MAX_SCALE;
+	
+	boolean isLeftEdge = false;
+	boolean isRightEdge = false;
+	float downX = 0;
+
 
     private boolean mAllowParentInterceptOnEdge = true;
 
@@ -273,7 +279,7 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 		if (null != imageView && hasDrawable(imageView)) {
 			mSuppMatrix.postTranslate(dx, dy);
 			checkAndDisplayMatrix();
-
+			
 			/**
 			 * Here we decide whether to let the ImageView's parent to start
 			 * taking over the touch event.
@@ -283,9 +289,13 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
              * on, and the direction of the scroll (i.e. if we're pulling against
              * the edge, aka 'overscrolling', let the parent take over).
 			 */
+			
+			//Improved by me
+			RectF rect = getDisplayRect();
+			
 			if (mAllowParentInterceptOnEdge && !mScaleDragDetector.isScaling()) {
-				if (mScrollEdge == EDGE_BOTH || (mScrollEdge == EDGE_LEFT && dx >= 1f)
-						|| (mScrollEdge == EDGE_RIGHT && dx <= -1f)) {
+				if (mScrollEdge == EDGE_BOTH || (mScrollEdge == EDGE_LEFT && dx >= 1f && (int)rect.left==0)
+					|| (mScrollEdge == EDGE_RIGHT && dx <= -1f && (int)rect.right==((Activity) getImageView().getContext()).getWindowManager().getDefaultDisplay().getWidth())) {
 					imageView.getParent().requestDisallowInterceptTouchEvent(false);
 				}
 			}
@@ -379,7 +389,9 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 	@Override
 	public final boolean onTouch(View v, MotionEvent ev) {
 		boolean handled = false;
-
+		
+		//Improved by me
+		
 		if (mZoomEnabled) {
 			switch (ev.getAction()) {
 				case MotionEvent.ACTION_DOWN:
@@ -389,13 +401,42 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 
 					// If we're flinging, and the user presses down, cancel
 					// fling
+					isLeftEdge = false;
+					isRightEdge = false;
+					final RectF displayRect= getDisplayRect();
+					
+					if((int)displayRect.left==0)
+					{
+						isLeftEdge = true;
+						downX = ev.getRawX();
+						
+					}
+					if((int)displayRect.right == ((Activity) getImageView().getContext()).getWindowManager().getDefaultDisplay().getWidth())
+					{
+						isRightEdge = true;
+						downX = ev.getRawX();
+						
+					}
+					
 					cancelFling();
 					break;
-
+					
+				case MotionEvent.ACTION_MOVE:
+					
+					
+					if((isLeftEdge && ev.getRawX()-downX > 0) || (isRightEdge && ev.getRawX()-downX < 0))
+						{
+						isLeftEdge = false;
+						isRightEdge = false;
+						v.getParent().requestDisallowInterceptTouchEvent(false);
+						}
+					
+					break;
 				case MotionEvent.ACTION_CANCEL:
 				case MotionEvent.ACTION_UP:
 					// If the user has zoomed less than min scale, zoom back
 					// to min scale
+					
 					if (getScale() < mMinScale) {
 						RectF rect = getDisplayRect();
 						if (null != rect) {
