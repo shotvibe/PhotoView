@@ -385,13 +385,14 @@ public class PhotoViewAttacher implements IPhotoView, View.OnTouchListener, Vers
 					isRightEdge = false;
 					final RectF displayRect= getDisplayRect();
 					
-					if((int)displayRect.left==0)
+					
+					if((int)displayRect.left >= 0 && !mScaleDragDetector.isScaling())
 					{
 						isLeftEdge = true;
 						downX = ev.getRawX();
 						
 					}
-					if((int)displayRect.right == ((Activity) getImageView().getContext()).getWindowManager().getDefaultDisplay().getWidth())
+					if((int)displayRect.right <= ((Activity) getImageView().getContext()).getWindowManager().getDefaultDisplay().getWidth() && !mScaleDragDetector.isScaling())
 					{
 						isRightEdge = true;
 						downX = ev.getRawX();
